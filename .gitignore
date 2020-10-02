@@ -1,0 +1,13 @@
+build/
+devel/
+result*
+*.egg-info
+*.pyc
+.catkin_workspace
+log
+.vscode/
+*.pkl
+bags/*/
+__pycache__
+events.*
+*.pth
