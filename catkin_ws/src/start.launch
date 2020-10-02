@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<launch>
+  
+    <include file="$(find movement)/launch/base_move.launch" />
+    <include file="$(find usb_cam)/launch/usb_cam.launch" />
+
+</launch>
