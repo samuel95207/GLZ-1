@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<launch>
+  
+  <node name="base_move_py" output="screen" pkg="movement" type="base_move.py" />
+
+</launch>
