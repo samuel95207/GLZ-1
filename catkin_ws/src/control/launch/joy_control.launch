@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<launch>
+  
+ <!-- joy node -->
+  <node name="joy" pkg="joy" type="joy_node" >
+    <param name="dev" type="string" value="/dev/input/js0" />
+  </node>
+
+  <node name="joy_control_py" output="screen" pkg="control" type="joy_control.py">
+
+    <param name="YAW_STEP"   type="int" value="10" /> 
+    <param name="PITCH_STEP"   type="int" value="5" /> 
+    <param name="RATE"   type="int" value="10" /> 
+
+  </node>
+
+</launch>
