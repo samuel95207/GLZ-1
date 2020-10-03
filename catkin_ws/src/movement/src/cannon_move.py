@@ -3,24 +3,32 @@ import rospy
 from std_msgs.msg import String
 from geometry_msgs.msg import Twist
 
+from Servo import *
+
 
 class CannonMove():
     def __init__(self):
 
-        self._glz_name = rospy.get_param('GLZ_NAME', 'GLZ00')
-        self._pin_config = {"GPIO_YAW_PIN": rospy.get_param('~GPIO_YAW_PIN', 16),
-                            "GPIO_PITCH_PIN": rospy.get_param('~GPIO_PITCH_PIN', 17)
-                            }
+        self.glz_name = rospy.get_param('GLZ_NAME', 'GLZ01')
+        self.pin_config = {"GPIO_YAW_PIN": rospy.get_param('cannon_move_py/GPIO_YAW_PIN', 16),
+                           "GPIO_PITCH_PIN": rospy.get_param('cannon_move_py/GPIO_PITCH_PIN', 17)
+                           }
+
+
+        self.yaw_servo = Servo(self.pin_config["GPIO_YAW_PIN"])
+        self.pitch_servo = Servo(self.pin_config["GPIO_PITCH_PIN"])
 
         rospy.init_node('cannon_move_listener', anonymous=True)
-        rospy.Subscriber(self._glz_name+"/base/cannon_move",
-                         Twist, self._cannon_callback)
+        rospy.Subscriber("/"+self.glz_name+"/cannon/move", Twist, self.cannon_callback)
 
         rospy.spin()
 
-    def _cannon_callback(self, data):
-        rospy.loginfo(rospy.get_caller_id() + data.data)
-        # TODO: cannon moter control
+    def cannon_callback(self, data):
+        # rospy.loginfo(data)
+        if(0 <= data.angular.y <= 180):
+            self.yaw_servo.write(data.angular.y)
+        if(0 <= data.angular.z <= 80):
+            self.pitch_servo.write(data.angular.z)
 
 
 if __name__ == '__main__':
