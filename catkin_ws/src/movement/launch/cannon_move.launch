@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<launch>
+  
+  <node name="cannon_move_py" output="screen" pkg="movement" type="cannon_move.py">
+    <param name="GPIO_YAW_PIN"   type="int" value="1" />
+    <param name="GPIO_PITCH_PIN"   type="int" value="2" />
+  </node>
+
+</launch>
