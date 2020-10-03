@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<launch>
+  
+ <!-- joy node -->
+  <node name="joy" pkg="joy" type="joy_node" >
+    <param name="dev" type="string" value="/dev/input/js0" />
+  </node>
+
+</launch>
