@@ -25,6 +25,8 @@ class JoyControl():
 
         self.axes = (0,0,0,0,0,0,0,0)
 
+        rospy.loginfo("Node joy_control has started")
+
 
         self.rate = rospy.Rate(rospy.get_param('joy_control_py/RATE', 10)) 
 
