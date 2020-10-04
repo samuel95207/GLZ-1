@@ -39,6 +39,7 @@ class Servo:
             self.pi.set_mode(self.PIN, pigpio.OUTPUT)
             self.pi.write(self.PIN, 0)
             self.pi.stop()
+        print("PIN" + str(self.PIN) +" servo stop")
 
 
 
