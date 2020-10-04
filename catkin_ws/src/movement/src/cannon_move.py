@@ -21,7 +21,11 @@ class CannonMove():
         rospy.init_node('cannon_move_listener', anonymous=True)
         rospy.Subscriber("/"+self.glz_name+"/cannon/move", Twist, self.cannon_callback)
 
+        rospy.loginfo("Node cannon_move_listener has started")
+
         rospy.spin()
+
+        self.stop()
 
     def cannon_callback(self, data):
         rospy.loginfo(data)
@@ -33,6 +37,7 @@ class CannonMove():
     def stop(self):
         self.yaw_servo.stop()
         self.pitch_servo.stop()
+        print("Servo Stop")
         rospy.loginfo("Servo Stop")
 
 
@@ -41,6 +46,4 @@ if __name__ == '__main__':
     try:
         bm = CannonMove()
     except rospy.ROSInterruptException:
-        bm.stop()
-    except:
-        bm.stop()
+        pass
