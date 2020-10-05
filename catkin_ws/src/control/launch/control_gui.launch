@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<launch>
+
+  <node name="control_gui_py" output="screen" pkg="control" type="control_gui.py">
+    <param name="image_topic" value="/usb_cam/image_raw" />
+  </node>
+
+</launch>
