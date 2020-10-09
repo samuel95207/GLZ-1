@@ -26,12 +26,17 @@ class ControlGUI:
         self.ros_setup()
 
 
+        self.video_stream()
+
+
 
         self.tkmaster.mainloop()
 
     def components_render(self):
         self.imageDisplay = tk.Label(self.tkmaster, bg="White", height=480, width=600)
         self.imageDisplay.pack() 
+
+        self.imgtk = []
 
     def ros_setup(self):
         self.glz_name = rospy.get_param('GLZ_NAME', 'GLZ01')
@@ -53,14 +58,16 @@ class ControlGUI:
     def image_callback(self,data):
         cv_image = self.bridge.imgmsg_to_cv2(data, desired_encoding='passthrough')
 
-        a = time.time()
         cv2image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGBA)
         img = Image.fromarray(cv2image)
-        imgtk = ImageTk.PhotoImage(image=img)
-        self.imageDisplay.imgtk = imgtk
-        self.imageDisplay.configure(image=imgtk)
-        b= time.time()
-        print(b-a)
+        self.imgtk = ImageTk.PhotoImage(image=img)
+
+    def video_stream(self):
+        if(self.imgtk != []):
+            self.imageDisplay.imgtk = self.imgtk
+            self.imageDisplay.configure(image=self.imgtk)
+            print("in")
+        self.imageDisplay.after(1,self.video_stream)
 
         
 
