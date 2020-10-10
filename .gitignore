@@ -11,3 +11,4 @@ bags/*/
 __pycache__
 events.*
 *.pth
+network_env.sh
