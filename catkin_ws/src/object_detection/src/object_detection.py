@@ -22,11 +22,14 @@ import gluoncv as gcv
 
 import time
 
+import threading
+
 os.environ["MXNET_CUDNN_AUTOTUNE_DEFAULT"] = "0"
 
 
 class ObjectDetection():
     def __init__(self):
+        self.cv_image = []
 
         self.is_aim = False
         self.is_lock = False
@@ -72,7 +75,15 @@ class ObjectDetection():
                           self.center_y+self.maskSize)
 
         self.ros_setup()
+
+        self.process_thread = threading.Thread(target=self.detection_process) 
+        self.process_thread.start()
+
         rospy.spin()
+
+        self.process_thread.join()
+
+        
 
     def ros_setup(self):
         self.glz_name = rospy.get_param('GLZ_NAME', 'GLZ01')
@@ -95,9 +106,9 @@ class ObjectDetection():
 
         self.bridge = CvBridge()
 
-    def publish_image(self, imgdata, height, width, time):
+    def publish_image(self, imgdata, height, width, time=None):
         image_raw=Image_msg()
-        header = Header(stamp=time)
+        header = Header(stamp=rospy.Time.now())
         header.frame_id = 'map'
         image_raw.height = height
         image_raw.width = width
@@ -108,126 +119,135 @@ class ObjectDetection():
         self.image_pubulisher_raw.publish(image_raw)
 
         image_compressed = CompressedImage()
-        image_compressed.header.stamp = time
+        image_compressed.header.stamp =rospy.Time.now()
         image_compressed.format = "jpeg"
         imgdata = cv2.cvtColor(imgdata, cv2.COLOR_BGR2RGB)
+
         image_compressed.data = np.array(cv2.imencode('.jpg', imgdata)[1]).tostring()
         self.image_pubulisher_compressed.publish(image_compressed)
 
 
     def image_callback(self, data):
-        a = time.time()
         if("compressed" in self.image_topic_name):
-            self.cv_image = cv2.cvtColor(self.bridge.compressed_imgmsg_to_cv2(
+            frame = cv2.cvtColor(self.bridge.compressed_imgmsg_to_cv2(
                 data, desired_encoding='passthrough'), cv2.COLOR_BGR2RGB)
         else:
-            self.cv_image = self.bridge.imgmsg_to_cv2(
+            frame = self.bridge.imgmsg_to_cv2(
                 data, desired_encoding='passthrough')
+        self.cv_image  = cv2.flip(frame, 1)
         # img = Image.fromarray(cv_image)
-        frame = self.cv_image
+        
 
 
-        aim_p1 = (self.center_p1[0]+self.move_xy[0], self.center_p1[1]+self.move_xy[1])
-        aim_p2 = (self.center_p2[0]+self.move_xy[0], self.center_p2[1]+self.move_xy[1])
+    def detection_process(self):
+        time.sleep(3)
+        while True:
+            if(self.cv_image == []):
+                continue
+            frame = self.cv_image
 
-        yolo_frame = mx.nd.array(cv2.cvtColor(
-            frame, cv2.COLOR_BGR2RGB)).astype('uint8')
-        rgb_nd, yolo_frame = gcv.data.transforms.presets.yolo.transform_test(
-            yolo_frame, short=320)
-        rgb_nd = rgb_nd.as_in_context(self.ctx)
-        class_IDs, scores, bounding_boxs = self.detector(rgb_nd)
-        if isinstance(bounding_boxs, mx.nd.NDArray):
-            bounding_boxs = bounding_boxs[0].asnumpy()
-            bounding_boxs *= self.rescale
-        if isinstance(class_IDs, mx.nd.NDArray):
-            class_IDs = class_IDs[0].asnumpy()
-        if isinstance(scores, mx.nd.NDArray):
-            scores = scores[0].asnumpy()
+            aim_p1 = (self.center_p1[0]+self.move_xy[0], self.center_p1[1]+self.move_xy[1])
+            aim_p2 = (self.center_p2[0]+self.move_xy[0], self.center_p2[1]+self.move_xy[1])
 
-        # Show Bounding Box
-        if self.class_mode == 'human':
-            class_id = 0.
-        elif self.class_mode == 'cat':
-            class_id = 15.
-        elif self.class_mode == 'dog':
-            class_id = 16.
-        detect_p1 = []
-        detect_p2 = []
-        for i in range(100):
-            if class_IDs[i] == class_id and scores[i] > self.score_threshold:
-                p1 = (int(bounding_boxs[i, 0]), int(bounding_boxs[i, 1]))
-                p2 = (int(bounding_boxs[i, 2]), int(bounding_boxs[i, 3]))
-                detect_p1.append(p1)
-                detect_p2.append(p2)
-                cv2.rectangle(frame, p1, p2, (255, 0, 0), 2)
-                # print(p1)
-        # print(self.is_lock)
+            yolo_frame = mx.nd.array(cv2.cvtColor(
+                frame, cv2.COLOR_BGR2RGB)).astype('uint8')
+            rgb_nd, yolo_frame = gcv.data.transforms.presets.yolo.transform_test(
+                yolo_frame, short=320)
+            rgb_nd = rgb_nd.as_in_context(self.ctx)
+            class_IDs, scores, bounding_boxs = self.detector(rgb_nd)
+            if isinstance(bounding_boxs, mx.nd.NDArray):
+                bounding_boxs = bounding_boxs[0].asnumpy()
+                bounding_boxs *= self.rescale
+            if isinstance(class_IDs, mx.nd.NDArray):
+                class_IDs = class_IDs[0].asnumpy()
+            if isinstance(scores, mx.nd.NDArray):
+                scores = scores[0].asnumpy()
 
-        # track
-        if self.is_lock:
-            tracked = -1
-            tracked_ratio = -1
-            if len(detect_p1) != 0:
-                non_track = 0
-                for i in range(len(detect_p1)):
-                    track_ratio, area_dif = self.interaction_ratio(
-                        detect_p1[i], detect_p2[i], self.lock_p1, self.lock_p2)
-                    if track_ratio > self.track_threshold:
-                        if tracked == -1:
-                            tracked = i
-                            tracked_diff = area_dif
-                        else:
-                            if area_dif < tracked_diff:
+            # Show Bounding Box
+            if self.class_mode == 'human':
+                class_id = 0.
+            elif self.class_mode == 'cat':
+                class_id = 15.
+            elif self.class_mode == 'dog':
+                class_id = 16.
+            detect_p1 = []
+            detect_p2 = []
+            for i in range(100):
+                if class_IDs[i] == class_id and scores[i] > self.score_threshold:
+                    p1 = (int(bounding_boxs[i, 0]), int(bounding_boxs[i, 1]))
+                    p2 = (int(bounding_boxs[i, 2]), int(bounding_boxs[i, 3]))
+                    detect_p1.append(p1)
+                    detect_p2.append(p2)
+                    cv2.rectangle(frame, p1, p2, (255, 0, 0), 2)
+                    # print(p1)
+            # print(self.is_lock)
+
+            # track
+            if self.is_lock:
+                tracked = -1
+                tracked_ratio = -1
+                if len(detect_p1) != 0:
+                    non_track = 0
+                    for i in range(len(detect_p1)):
+                        track_ratio, area_dif = self.interaction_ratio(
+                            detect_p1[i], detect_p2[i], self.lock_p1, self.lock_p2)
+                        if track_ratio > self.track_threshold:
+                            if tracked == -1:
                                 tracked = i
                                 tracked_diff = area_dif
-                if tracked == -1:
-                    non_track += 1
+                            else:
+                                if area_dif < tracked_diff:
+                                    tracked = i
+                                    tracked_diff = area_dif
+                    if tracked == -1:
+                        non_track += 1
+                    else:
+                        lock_p1 = detect_p1[tracked]
+                        lock_p2 = detect_p2[tracked]
+                        cv2.rectangle(frame, lock_p1, lock_p2, (0, 0, 255), 2)
                 else:
-                    lock_p1 = detect_p1[tracked]
-                    lock_p2 = detect_p2[tracked]
-                    cv2.rectangle(frame, lock_p1, lock_p2, (0, 0, 255), 2)
-            else:
-                non_track += 1
-            if non_track > 3:
-                is_lock = False
+                    non_track += 1
+                if non_track > 3:
+                    is_lock = False
 
-        # lock
-        if self.is_aim:
-            if is_lock:
-                is_lock = False
-                lock_p1 = (0, 0)
-                lock_p2 = (0, 0)
-            else:
-                locked = -1
-                locked_ratio = -1
-                for i in range(len(detect_p1)):
-                    lock_ratio, _ = self.interaction_ratio(
-                        detect_p1[i], detect_p2[i], aim_p1, aim_p2)
-                    if lock_ratio > self.lock_threshold:
-                        if locked == -1:
-                            locked = i
-                            locked_ratio = lock_ratio
-                        else:
-                            if lock_ratio > locked_ratio:
+            # lock
+            if self.is_aim:
+                if is_lock:
+                    is_lock = False
+                    lock_p1 = (0, 0)
+                    lock_p2 = (0, 0)
+                else:
+                    locked = -1
+                    locked_ratio = -1
+                    for i in range(len(detect_p1)):
+                        lock_ratio, _ = self.interaction_ratio(
+                            detect_p1[i], detect_p2[i], aim_p1, aim_p2)
+                        if lock_ratio > self.lock_threshold:
+                            if locked == -1:
                                 locked = i
                                 locked_ratio = lock_ratio
-                # print(locked)
-                if locked == -1:
-                    pass
-                else:
-                    lock_p1 = detect_p1[locked]
-                    lock_p2 = detect_p2[locked]
-                    cv2.rectangle(frame, lock_p1, lock_p2, (0, 0, 255), 2)
+                            else:
+                                if lock_ratio > locked_ratio:
+                                    locked = i
+                                    locked_ratio = lock_ratio
+                    # print(locked)
+                    if locked == -1:
+                        pass
+                    else:
+                        lock_p1 = detect_p1[locked]
+                        lock_p2 = detect_p2[locked]
+                        cv2.rectangle(frame, lock_p1, lock_p2, (0, 0, 255), 2)
 
-        frame = self.lock_mask(frame, self.move_xy, self.is_aim)
-        # cv2.imshow('frame', frame)
+            frame = self.lock_mask(frame, self.move_xy, self.is_aim)
+            # cv2.imshow('frame', frame)
 
-        # print((rospy.Time.now().nsecs-data.header.stamp.nsecs )*10**(-9))
+            # print((rospy.Time.now().nsecs-data.header.stamp.nsecs )*10**(-9))
 
-        self.publish_image(frame, frame.shape[0], frame.shape[1], data.header.stamp)
-        b = time.time()
+            # self.publish_image(frame, frame.shape[0], frame.shape[1], data.header.stamp)
+            self.publish_image(frame, frame.shape[0], frame.shape[1])
 
-        print(b-a)
+
+
 
     def interaction_ratio(self, detect_1, detect_2, lock_1, lock_2):
         cx1, cy1 = detect_1
