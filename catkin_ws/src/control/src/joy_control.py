@@ -2,9 +2,10 @@
 
 import rospy
 
-from std_msgs.msg import String, Float64
+from std_msgs.msg import String, Float64, Bool
 from geometry_msgs.msg import Twist, Point32
 from sensor_msgs.msg import Joy
+import math
 
 class JoyControl():
     def __init__(self):
@@ -12,6 +13,7 @@ class JoyControl():
         self.glz_name = rospy.get_param('GLZ_NAME', 'GLZ01')
 
         self.cannon_move_pub = rospy.Publisher("/"+self.glz_name+'/cannon/move', Twist, queue_size=1)
+        self.cannon_fire_pub = rospy.Publisher("/"+self.glz_name+'/cannon/fire', Bool, queue_size=1)
         self.base_move_pub = rospy.Publisher("/"+self.glz_name+'/base/move', Twist, queue_size=1)
 
         rospy.init_node('joy_control', anonymous=True)
@@ -51,8 +53,24 @@ class JoyControl():
             if(self.pitch <= 0):
                 self.pitch = 0
             
+            x = self.axes[1]
+            if( -0.1 < x < 0.1):
+                x = 0
+
+            yaw = self.axes[0]*math.pi/2
+
+            if( -0.2 < yaw < 0.2):
+                yaw = 0
 
             self.setCannon(yaw = self.yaw, pitch = self.pitch)
+            self.setMovement(x = x, yaw=yaw)
+            
+            if(self.axes[5] < -0.9):
+                self.cannon_fire_pub.publish(True)
+            else:
+                self.cannon_fire_pub.publish(False)
+
+            # print(self.axes)
 
             self.rate.sleep()
         
@@ -72,15 +90,15 @@ class JoyControl():
 
     
 
-    def setMovement(self,x=0,y=0,z=0,raw=0,yaw=0,pitch=0):
+    def setMovement(self,x=0, yaw=0):
         cmd_vel_msg = Twist()
 
         cmd_vel_msg.linear.x = x
-        cmd_vel_msg.linear.y = y
-        cmd_vel_msg.linear.z = z
-        cmd_vel_msg.angular.x = raw
+        cmd_vel_msg.linear.y = 0
+        cmd_vel_msg.linear.z = 0
+        cmd_vel_msg.angular.x = 0
         cmd_vel_msg.angular.y = yaw
-        cmd_vel_msg.angular.z = pitch
+        cmd_vel_msg.angular.z = 0
 
         # rospy.loginfo(cmd_vel_msg)
         self.base_move_pub.publish(cmd_vel_msg)
@@ -95,7 +113,7 @@ class JoyControl():
         cmd_vel_msg.angular.y = yaw
         cmd_vel_msg.angular.z = pitch
 
-        rospy.loginfo(cmd_vel_msg)
+        # rospy.loginfo(cmd_vel_msg)
         self.cannon_move_pub.publish(cmd_vel_msg)
 
 
