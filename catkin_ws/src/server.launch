@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<launch>
+    <param name="GLZ_NAME" value="GLZ01"/>
+    
+    <include file="$(find control)/launch/joy_control.launch" />
+</launch>
