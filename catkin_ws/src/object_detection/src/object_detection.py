@@ -76,9 +76,12 @@ class ObjectDetection():
 
         self.ros_setup()
 
-        threading.Thread(target=self.detection_process).start()
+        self.process_thread = threading.Thread(target=self.detection_process) 
+        self.process_thread.start()
 
         rospy.spin()
+
+        self.process_thread.join()
 
         
 
@@ -119,18 +122,19 @@ class ObjectDetection():
         image_compressed.header.stamp =rospy.Time.now()
         image_compressed.format = "jpeg"
         imgdata = cv2.cvtColor(imgdata, cv2.COLOR_BGR2RGB)
-        
+
         image_compressed.data = np.array(cv2.imencode('.jpg', imgdata)[1]).tostring()
         self.image_pubulisher_compressed.publish(image_compressed)
 
 
     def image_callback(self, data):
         if("compressed" in self.image_topic_name):
-            self.cv_image = cv2.cvtColor(self.bridge.compressed_imgmsg_to_cv2(
+            frame = cv2.cvtColor(self.bridge.compressed_imgmsg_to_cv2(
                 data, desired_encoding='passthrough'), cv2.COLOR_BGR2RGB)
         else:
-            self.cv_image = self.bridge.imgmsg_to_cv2(
+            frame = self.bridge.imgmsg_to_cv2(
                 data, desired_encoding='passthrough')
+        self.cv_image  = cv2.flip(frame, 1)
         # img = Image.fromarray(cv_image)
         
 
