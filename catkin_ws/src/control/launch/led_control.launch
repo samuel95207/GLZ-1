@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<launch>
+  
+
+  <node name="led_control_py" output="screen" pkg="control" type="led_control.py">
+    <param name="image_topic" value="/usb_cam1/image_raw/compressed" />
+  </node>
+
+</launch>
