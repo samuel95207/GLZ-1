@@ -97,10 +97,10 @@ class ControlGUI(QWidget):
 
 
 
-    def joy_callback(self):
+    def joy_callback(self,data):
         pass
     
-    def cannon_data_callback(self):
+    def cannon_data_callback(self,data):
         pass
 
     def image_callback(self,data):
