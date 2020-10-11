@@ -14,6 +14,7 @@ class JoyControl():
 
         self.cannon_move_pub = rospy.Publisher("/"+self.glz_name+'/cannon/move', Twist, queue_size=1)
         self.cannon_fire_pub = rospy.Publisher("/"+self.glz_name+'/cannon/fire', Bool, queue_size=1)
+        self.cannon_aim_pub = rospy.Publisher("/"+self.glz_name+'/cannon/aim', Bool, queue_size=1)
         self.base_move_pub = rospy.Publisher("/"+self.glz_name+'/base/move', Twist, queue_size=1)
 
         rospy.init_node('joy_control', anonymous=True)
@@ -62,13 +63,14 @@ class JoyControl():
             if( -0.2 < yaw < 0.2):
                 yaw = 0
 
-            self.setCannon(yaw = self.yaw, pitch = self.pitch)
+            if(self.axes[2] > -0.9):
+                self.setCannon(yaw = self.yaw, pitch = self.pitch)
+                
             self.setMovement(x = x, yaw=yaw)
             
-            if(self.axes[5] < -0.9):
-                self.cannon_fire_pub.publish(True)
-            else:
-                self.cannon_fire_pub.publish(False)
+
+            self.cannon_fire_pub.publish(self.axes[5] < -0.9)
+            self.cannon_aim_pub.publish(self.axes[2] < -0.9)
 
             # print(self.axes)
 
