@@ -2,8 +2,8 @@
 
 <launch>
 
-  <node name="control_gui_py" output="screen" pkg="control" type="control_gui.py">
-    <param name="image_topic" value="/usb_cam/image_raw" />
+  <node name="control_gui_py" output="screen" pkg="control" type="control_gui_qt.py">
+    <param name="image_topic" value="/object_detection_image/image_raw/compressed" />
   </node>
 
 </launch>

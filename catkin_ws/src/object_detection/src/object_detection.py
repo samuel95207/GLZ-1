@@ -6,8 +6,8 @@ Created on Thu Oct  8 22:01:43 2020
 @author: 203
 """
 import rospy
-from std_msgs.msg import String, Float64, Header
-from geometry_msgs.msg import Twist, Point32
+from std_msgs.msg import String, Float64, Header, Bool
+from geometry_msgs.msg import Twist, Point
 from sensor_msgs.msg import Joy
 from sensor_msgs.msg import Image as Image_msg
 from sensor_msgs.msg import CompressedImage
@@ -90,12 +90,18 @@ class ObjectDetection():
 
         rospy.init_node('object_detection', anonymous=True)
 
-        self.image_pubulisher_raw = rospy.Publisher('mask_image/image_raw',Image_msg,queue_size=1)
-        self.image_pubulisher_compressed = rospy.Publisher('mask_image/image_raw/compressed',CompressedImage,queue_size=1)
+        self.image_pubulisher_raw = rospy.Publisher('object_detection_image/image_raw',Image_msg,queue_size=1)
+        self.image_pubulisher_compressed = rospy.Publisher('object_detection_image/image_raw/compressed',CompressedImage,queue_size=1)
 
+
+        self.lock_pos_pubulisher = rospy.Publisher('object_detection/lock_pos',Point,queue_size=1)
+
+
+
+        rospy.Subscriber("/"+self.glz_name+'/cannon/aim', Bool, self.aim_callback)
 
         self.image_topic_name = rospy.get_param(
-            "object_detection/image_topic", "/usb_cam/image_raw/compressed")
+            "object_detection/image_topic", "/usb_cam1/image_raw/compressed")
 
         if("compressed" in self.image_topic_name):
             rospy.Subscriber(self.image_topic_name,
@@ -135,6 +141,12 @@ class ObjectDetection():
             frame = self.bridge.imgmsg_to_cv2(
                 data, desired_encoding='passthrough')
         self.cv_image  = cv2.flip(frame, 1)
+        # img = Image.fromarray(cv_image)
+
+
+    
+    def aim_callback(self, data):
+        self.is_aim = data.data
         # img = Image.fromarray(cv_image)
         
 
@@ -205,15 +217,21 @@ class ObjectDetection():
                         lock_p1 = detect_p1[tracked]
                         lock_p2 = detect_p2[tracked]
                         cv2.rectangle(frame, lock_p1, lock_p2, (0, 0, 255), 2)
+
+                        p = Point()
+                        p.x = (lock_p1[0]+lock_p2[0])/2
+                        p.y = (lock_p1[1]+lock_p2[1])/2
+                        p.z = 0
+                        self.lock_pos_pubulisher.publish(p)
                 else:
                     non_track += 1
                 if non_track > 3:
-                    is_lock = False
+                    self.is_lock = False
 
             # lock
             if self.is_aim:
-                if is_lock:
-                    is_lock = False
+                if self.is_lock:
+                    self.is_lock = False
                     lock_p1 = (0, 0)
                     lock_p2 = (0, 0)
                 else:
@@ -237,6 +255,14 @@ class ObjectDetection():
                         lock_p1 = detect_p1[locked]
                         lock_p2 = detect_p2[locked]
                         cv2.rectangle(frame, lock_p1, lock_p2, (0, 0, 255), 2)
+                        
+                        p = Point()
+                        p.x = (lock_p1[0]+lock_p2[0])/2
+                        p.y = (lock_p1[1]+lock_p2[1])/2
+                        p.z = 0
+                        self.lock_pos_pubulisher.publish(p)
+                        
+
 
             frame = self.lock_mask(frame, self.move_xy, self.is_aim)
             # cv2.imshow('frame', frame)

@@ -81,7 +81,7 @@ class ControlGUI(QWidget):
         rospy.init_node('control_gui', anonymous=True)
 
 
-        self.image_topic_name = rospy.get_param("control_gui_py/image_topic","/mask_image/image_raw/compressed")
+        self.image_topic_name = rospy.get_param("control_gui_py/image_topic","/object_detection_image/image_raw/compressed")
 
         rospy.Subscriber("/joy", Joy, self.joy_callback)
         rospy.Subscriber("/"+self.glz_name+"/cannon/move", Twist, self.cannon_data_callback)
@@ -97,10 +97,10 @@ class ControlGUI(QWidget):
 
 
 
-    def joy_callback(self):
+    def joy_callback(self,data):
         pass
     
-    def cannon_data_callback(self):
+    def cannon_data_callback(self,data):
         pass
 
     def image_callback(self,data):

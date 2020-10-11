@@ -4,4 +4,8 @@
     <param name="GLZ_NAME" value="GLZ01"/>
     
     <include file="$(find control)/launch/joy_control.launch" />
+    <include file="$(find object_detection)/launch/object_detection.launch" />
+    <include file="$(find control)/launch/cannon_decision_maker.launch" />
+    <include file="$(find control)/launch/control_gui.launch" />
+
 </launch>
