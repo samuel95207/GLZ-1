@@ -2,10 +2,18 @@
 
 <launch>
   
-  <node name="cannon_move_py" output="screen" pkg="movement" type="cannon_move.py">
+  <node name="cannon_move_py" output="screen" pkg="movement" type="cannon_move_stm32.py">
+    <param name="SerialPort"   type="string" value="/dev/ttyS1" />
+    <param name="BaudRate"   type="int" value="9600" />
+
+    <!-- <param name="GPIO_YAW_PIN"   type="int" value="12" />
+    <param name="GPIO_PITCH_PIN"   type="int" value="13" /> -->
+  </node>
+
+  <!-- <node name="cannon_move_py" output="screen" pkg="movement" type="cannon_move_rpi.py">
     <param name="GPIO_FIRE_PIN"   type="int" value="4" />
     <param name="GPIO_YAW_PIN"   type="int" value="12" />
     <param name="GPIO_PITCH_PIN"   type="int" value="13" />
-  </node>
+  </node> -->
 
 </launch>
