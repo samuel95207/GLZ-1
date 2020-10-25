@@ -27,6 +27,8 @@ class JoyControl():
         self.pitch_rate = rospy.get_param('joy_control_py/PITCH_STEP', 20)
 
         self.axes = (0,0,0,0,0,0,0,0)
+        self.buttons = (0,0,0,0,0,0,0,0,0,0,0)
+
 
         rospy.loginfo("Node joy_control has started")
 
@@ -34,7 +36,9 @@ class JoyControl():
         self.rate = rospy.Rate(rospy.get_param('joy_control_py/RATE', 10)) 
 
         while not rospy.is_shutdown():
-
+            if(self.buttons[0] != 1):
+                continue
+            
             if(self.axes[4] > 0.9):
                 self.pitch += self.pitch_rate
             elif(self.axes[4] < -0.9):
@@ -49,10 +53,10 @@ class JoyControl():
                 self.yaw = 180
             if(self.yaw <= 0):
                 self.yaw = 0
-            if(self.pitch >= 80):
-                self.pitch = 80
-            if(self.pitch <= 0):
-                self.pitch = 0
+            if(self.pitch >= 100):
+                self.pitch = 100
+            if(self.pitch <= 20):
+                self.pitch = 20
             
             x = self.axes[1]
             if( -0.1 < x < 0.1):
