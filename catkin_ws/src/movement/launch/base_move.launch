@@ -2,13 +2,13 @@
 
 <launch>
   
-  <node name="base_move_py" output="screen" pkg="movement" type="base_move.py" >
-    <param name="GPIO_LF_PIN"   type="int" value="27" /> <!-- Left Forward Pin  -->
-    <param name="GPIO_LR_PIN"   type="int" value="22" /> <!-- Left Reverse Pin  -->
-    <param name="GPIO_LPWM_PIN" type="int" value="17" /> <!-- Left PWM Pin  -->
-    <param name="GPIO_RF_PIN"   type="int" value="10" /> <!-- Right Forward Pin  -->
-    <param name="GPIO_RR_PIN"   type="int" value="9" /> <!-- Right Reverse Pin  -->
-    <param name="GPIO_RPWM_PIN" type="int" value="11" /> <!-- Right PWM Pin  -->
+  <node name="base_move_py" output="screen" pkg="movement" type="base_move_rpi.py" >
+    <param name="GPIO_LF_PIN"   type="int" value="9" /> <!-- Left Forward Pin  -->
+    <param name="GPIO_LR_PIN"   type="int" value="10" /> <!-- Left Reverse Pin  -->
+    <param name="GPIO_LPWM_PIN" type="int" value="11" /> <!-- Left PWM Pin  -->
+    <param name="GPIO_RF_PIN"   type="int" value="22" /> <!-- Right Forward Pin  -->
+    <param name="GPIO_RR_PIN"   type="int" value="27" /> <!-- Right Reverse Pin  -->
+    <param name="GPIO_RPWM_PIN" type="int" value="17" /> <!-- Right PWM Pin  -->
   </node>
 
 </launch>

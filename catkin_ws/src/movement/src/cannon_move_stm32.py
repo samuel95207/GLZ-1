@@ -4,15 +4,19 @@ from std_msgs.msg import String, Bool
 from geometry_msgs.msg import Twist
 
 import serial
-import rpi.GPIO as GPIO
+import RPi.GPIO as GPIO
 
 
 class CannonMove():
     def __init__(self):
+        GPIO.setmode(GPIO.BCM)
 
         self.glz_name = rospy.get_param('GLZ_NAME', 'GLZ01')
 
-        self.ser = serial.Serial(rospy.get_param('cannon_move_py/SerialPort', "/dev/ttyS1"), rospy.get_param('cannon_move_py/BaudRate', 9600), timeout=1)
+        self.firePIN = rospy.get_param('GPIO_FIRE_PIN', 4)
+        GPIO.setup(self.firePIN, GPIO.OUT)
+
+        self.ser = serial.Serial(rospy.get_param('cannon_move_py/SerialPort', "/dev/ttyACM0"), rospy.get_param('cannon_move_py/BaudRate', 9600), timeout=1)
 
         rospy.init_node('cannon_move_listener', anonymous=True)
         rospy.Subscriber("/"+self.glz_name+"/cannon/move", Twist, self.cannon_callback)
@@ -24,20 +28,27 @@ class CannonMove():
         GPIO.cleanup()
 
     def cannon_callback(self, data):
-        # rospy.loginfo(data)
-        if(0 <= data.angular.y <= 180):
-            self.ser.write((f'RawServo={data.angular.y}').encode())
-        if(0 <= data.angular.z <= 80):
-            self.ser.write((f'PitchServo={data.angular.z}').encode())
+
+
+        yaw = data.angular.y 
+        pitch = data.angular.z
+
+        # print(yaw,end=' ')
+        # print(pitch)
+
+        sent = int(pitch*181+yaw)
+        # print(sent)
+
+        self.ser.write((str(sent)+"\n").encode())
 
 
     def fire_callback(self, data):
         # rospy.loginfo(data)                                                                                                          
 
         if(data.data):
-            GPIO.output(self.pin_config["GPIO_FIRE_PIN"],GPIO.HIGH)
+            GPIO.output(self.firePIN,GPIO.HIGH)
         else:
-            GPIO.output(self.pin_config["GPIO_FIRE_PIN"],GPIO.LOW)
+            GPIO.output(self.firePIN,GPIO.LOW)
 
 
 
