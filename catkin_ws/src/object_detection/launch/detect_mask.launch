@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<launch>
+
+  <node name="detect_mask_py" output="screen" pkg="object_detection" type="detect_mask.py">
+    <param name="image_width" type="int" value="640" />
+    <param name="image_height" type="int" value="480" />
+    <param name="image_topic" value="/usb_cam1/image_raw/compressed" />
+    <param name="config_path" value="$(find object_detection)/config" />
+
+
+    
+  </node>
+
+</launch>
