@@ -41,9 +41,13 @@ class ROSControl:
                              Image_msg, self.image_callback)
 
         rospy.Subscriber("/"+self.glz_name+"/cannon/move", Twist, self.cannon_callback)
+        rospy.Subscriber("/"+self.glz_name+"/base/move", Twist, self.base_callback)
+
 
         self.cannon_yaw_read = 0
         self.cannon_pitch_read = 0
+        self.base_x_read = 0
+        self.base_yaw_read = 0
 
 
         self.bridge = CvBridge()
@@ -66,6 +70,11 @@ class ROSControl:
     def cannon_callback(self,data):
         self.cannon_yaw_read = data.angular.y
         self.cannon_pitch_read = data.angular.z
+
+
+    def base_callback(self,data):
+        self.base_x_read = data.linear.x
+        self.base_yaw_read = data.angular.y
 
     def joy_callback(self, data):
         pass
@@ -106,8 +115,13 @@ class ROSControl:
         # rospy.loginfo(cmd_vel_msg)
         self.cannon_move_pub.publish(cmd_vel_msg)
 
-    def setMovement(self,x=0, yaw=0):
+    def setMovement(self,x=None, yaw=None):
         cmd_vel_msg = Twist()
+
+        if(x == None):
+            x = self.base_x_read
+        if(yaw == None):
+            yaw = self.base_yaw_read
 
         cmd_vel_msg.linear.x = x
         cmd_vel_msg.linear.y = 0
@@ -146,27 +160,49 @@ def video_feed():
 
 @app.route('/api/cannon/yaw/<int:yaw>')
 def cannon_yaw_api(yaw):
-    rosc.setCannon(yaw=yaw, pitch=None)
+    # rosc.setCannon(yaw=yaw, pitch=None)
+    rosc.setMovement(yaw=yaw, x=None)
+
 
 @app.route('/api/cannon/pitch/<int:pitch>')
 def cannon_pitch_api(pitch):
     rosc.setCannon(yaw=None, pitch=pitch)
+    time.sleep(1)
+    rosc.setCannon(yaw=None, pitch=0)
+
 
 @app.route('/api/cannon/fire/<int:fire>')
 def cannon_fire_api(fire):
     if(not(fire==0)):
         rosc.cannon_fire_pub.publish(True)
+        print("fire")
         time.sleep(0.7)
         rosc.cannon_fire_pub.publish(False)
 
 
+@app.route('/api/base/x/<float:x>')
+def base_x_api(x):
+    t = x / 0.05
+    rosc.setMovement(yaw=None, x=1)
+    time.sleep(t)
+    rosc.setMovement(yaw=None, x=0)
 
-@app.route('/api/base', methods=['GET'])
-def basemove_api():
-    data = request.get_json()
-    x = data['x']
-    yaw = data['yaw']
-    rosc.setMovement(x=x, yaw=yaw)
+@app.route('/api/base/xr/<float:x>')
+def base_xr_api(x):
+    t = x / 0.5
+    rosc.setMovement(yaw=None, x=-1)
+    time.sleep(t)
+    rosc.setMovement(yaw=None, x=0)
+
+
+@app.route('/api/base/yaw/<int:yaw>')
+def base_yaw_api(yaw):
+    yaw-=90
+    yaw=yaw/180*3.14 
+    rosc.setMovement(yaw=yaw, x=None)
+    time.sleep(1)
+    rosc.setMovement(yaw=0, x=None)
+
 
 
 

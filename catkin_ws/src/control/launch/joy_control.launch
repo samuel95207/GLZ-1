@@ -4,7 +4,7 @@
   
  <!-- joy node -->
   <node name="joy" pkg="joy" type="joy_node" >
-    <param name="dev" type="string" value="/dev/input/js0" />
+    <param name="dev" type="string" value="/dev/input/js4" />
   </node>
 
   <node name="joy_control_py" output="screen" pkg="control" type="joy_control.py">
